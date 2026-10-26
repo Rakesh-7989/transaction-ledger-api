@@ -1,8 +1,12 @@
 -- ============================================================================
 -- Site: transaction-ledger-api
 -- Schema: accounts + transactions with database-enforced integrity.
--- Run once against the target database (e.g. via psql).
+-- Run once against the target database (e.g. Supabase PostgreSQL).
 -- ============================================================================
+
+-- pgcrypto is required for gen_random_uuid(). Enabled by default on Supabase,
+-- but added explicitly for portability.
+CREATE EXTENSION IF NOT EXISTS pgcrypto;
 
 -- accounts: one row per ledger account. balance is system-owned.
 CREATE TABLE IF NOT EXISTS accounts (

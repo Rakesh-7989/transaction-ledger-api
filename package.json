@@ -1,13 +1,14 @@
 {
   "name": "transaction-ledger-api",
   "version": "1.0.0",
-  "description": "CRUD transaction ledger API: account creation, credit/debit transactions, per-account duplicate reference protection, paginated history, database-enforced integrity.",
+  "description": "Transaction Ledger API: account creation, credit/debit transactions, per-account duplicate reference protection, paginated history, database-enforced integrity. Deployed on Vercel with Supabase PostgreSQL.",
   "type": "module",
-  "main": "src/server.js",
+  "main": "api/index.js",
   "scripts": {
     "dev": "node --watch src/server.js",
     "start": "node src/server.js",
-    "test": "node --test --test-concurrency=1"
+    "test": "node --test --test-concurrency=1",
+    "vercel-build": "echo 'No build step required for Express on Vercel'"
   },
   "dependencies": {
     "dotenv": "^16.4.5",

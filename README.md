@@ -1,150 +1,95 @@
 # Transaction Ledger API
 
-Zero-cost, local-first CRUD API for financial transaction ledgering. Built with
-Node.js + Express + PostgreSQL. Designed for the Walnut Folks Group assignment.
+Production-quality transaction ledger API built with Node.js 24, Express,
+PostgreSQL (Supabase), and deployed on Vercel. Zero authentication, zero
+frontend — just the four REST endpoints required by the assignment.
+
+## Live API
+
+Deployed on Vercel: **[LIVE_URL_PLACEHOLDER]**
+
+Database: Supabase PostgreSQL (managed).
 
 ## Scope
 
-- Account creation with a system-generated UUID and timestamp.
-- Credit/debit transactions with reliable, atomic balance updates.
-- Per-account duplicate reference protection.
-- Balance and paginated transaction-history endpoints.
-- Immutable transaction records and database-enforced integrity.
-- Automated tests and API documentation.
-
-No paid APIs, hosted database, or deployment is required — everything runs
-locally on your machine.
+- `POST /accounts` — Create account with server-generated UUID + timestamp, initial balance `0.00`.
+- `POST /accounts/:accountId/transactions` — Credit or debit a transaction.
+- `GET /accounts/:accountId/balance` — Get current balance.
+- `GET /accounts/:accountId/transactions` — Filtered, paginated transaction history.
 
 ## Tech stack
 
-- **Node.js** (ES modules) + **Express.js** — REST API, middleware, structured
-  error responses.
-- **PostgreSQL** — relational storage, constraints, transactions, row locking.
-- **pg** — PostgreSQL client for Node.js.
-- **zod** — input validation.
-- **dotenv** — local configuration.
-- **supertest** + **node:test** — automated API tests (no extra test framework).
+| Layer | Technology |
+|-------|-----------|
+| Runtime | Node.js 24 (ES modules) |
+| API framework | Express.js |
+| Database | PostgreSQL on Supabase |
+| DB client | `pg` (node-postgres) |
+| Validation | Zod |
+| Testing | Node `node:test` + Supertest |
+| Deployment | Vercel (serverless) |
 
 ## Prerequisites
 
-- Node.js >= 20 (tested with v24.11.0) and npm (tested with 11.6.1)
-- PostgreSQL (tested with PostgreSQL 16)
+- Node.js >= 20 and npm
+- A Supabase project with PostgreSQL provisioned
+- A Vercel account (for deployment)
 
-## Database setup (one time)
+## Database setup (Supabase)
 
-This project runs a local PostgreSQL instance. If you already have a local
-PostgreSQL, create the database and user, then skip to "Apply the schema".
+1. Create a new Supabase project (e.g. `transaction-ledger-api`).
+2. In the Supabase Dashboard → SQL Editor, run `src/db/schema.sql`.
+3. In the Supabase Dashboard → Settings → Database, copy the **connection string** (use the pooled connection string with `?pgbouncer=true&connection_limit=1` for serverless compatibility).
+4. Create a `.env` file from `.env.example` and set `DATABASE_URL` to your Supabase pooled connection string.
 
-### Option A: use the scripts below (PostgreSQL 16 on Windows)
+Never commit `.env` or real credentials to Git.
 
-Start a local instance on port 5433 (avoids conflicting with any existing
-PostgreSQL service):
+## Install and run locally
 
-```powershell
-# Create a fresh data directory and initialise it (trust auth, local only)
-C:\"Program Files"\PostgreSQL\16\bin\initdb.exe -D .\ledger-pgdata -U postgres --auth=trust --locale=C
-
-# Start it on port 5433
-C:\"Program Files"\PostgreSQL\16\bin\pg_ctl.exe -D .\ledger-pgdata -l .\ledger-pgdata\server.log -o "-p 5433" start
-```
-
-Create the application user and database:
-
-```powershell
-C:\"Program Files"\PostgreSQL\16\bin\psql.exe -U postgres -h 127.0.0.1 -p 5433 -c "CREATE USER ledger_user WITH PASSWORD 'ledger_pass' LOGIN;"
-C:\"Program Files"\PostgreSQL\16\bin\psql.exe -U postgres -h 127.0.0.1 -p 5433 -c "CREATE DATABASE transaction_ledger OWNER ledger_user;"
-C:\"Program Files"\PostgreSQL\16\bin\psql.exe -U postgres -h 127.0.0.1 -p 5433 -c "GRANT ALL PRIVILEGES ON DATABASE transaction_ledger TO ledger_user;"
-```
-
-Apply the schema:
-
-```powershell
-C:\"Program Files"\PostgreSQL\16\bin\psql.exe -U ledger_user -h 127.0.0.1 -p 5433 -d transaction_ledger -f src/db/schema.sql
-```
-
-Verify the connection:
-
-```powershell
-C:\"Program Files"\PostgreSQL\16\bin\psql.exe -U ledger_user -h 127.0.0.1 -p 5433 -d transaction_ledger -c "SELECT current_user, current_database();"
-```
-
-### Option B: use an existing local PostgreSQL
-
-Create a user and database, then point `DATABASE_URL` at them (port 5432 by
-default). The schema is in `src/db/schema.sql`.
-
-## Configuration
-
-Copy `.env.example` to `.env` and fill in your local credentials:
-
-```powershell
-copy .env.example .env
-```
-
-`.env` (never committed):
-
-```
-PORT=3000
-NODE_ENV=development
-DATABASE_URL=postgresql://ledger_user:ledger_pass@127.0.0.1:5433/transaction_ledger
-```
-
-> Note: this repo runs its local PostgreSQL on port **5433** (not the default
-> 5432) so it can coexist with any system PostgreSQL service. Update
-> `DATABASE_URL` if you use a different port.
-
-## Install and run
-
-```powershell
+```bash
 npm install
-npm start          # production-mode server
-npm run dev        # watch mode for development
+cp .env.example .env   # then edit .env with your Supabase DATABASE_URL
+npm start              # local server on http://localhost:3000
+npm run dev            # watch mode
 ```
 
-The API listens on `http://localhost:3000`.
+## Deploy on Vercel
 
-## Endpoints
+1. Push this repository to GitHub.
+2. In Vercel, import the repository `Rakesh-7989/transaction-ledger-api`.
+3. Add the environment variable `DATABASE_URL` (Supabase pooled connection string) under **Project Settings → Environment Variables**.
+4. Deploy. The API will be available at your Vercel project URL.
 
-| Method | Endpoint | Purpose |
-|--------|----------|---------|
-| POST | `/accounts` | Create account |
-| POST | `/accounts/:accountId/transactions` | Add credit or debit |
-| GET | `/accounts/:accountId/balance` | Retrieve balance |
-| GET | `/accounts/:accountId/transactions?type=&page=&limit=` | Transaction history |
+## Run tests
 
-See `docs/api-examples.md` for sample requests and responses.
-
-## Running the tests
-
-```powershell
+```bash
 npm test
 ```
 
-This runs `node --test`, which executes `tests/*.test.js` using Node's built-in
-test runner with Supertest for HTTP assertions.
+Tests run against the database configured in `DATABASE_URL`. Use a dedicated test database or ensure the target database can be truncated safely.
+
+## API endpoints
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| POST | `/accounts` | Create account |
+| POST | `/accounts/:accountId/transactions` | Add credit/debit transaction |
+| GET | `/accounts/:accountId/balance` | Get balance |
+| GET | `/accounts/:accountId/transactions` | Transaction history (filter + paginate) |
+
+See `docs/api-examples.md` for sample requests and responses.
 
 ## Key engineering decisions
 
-- **Row locking**: `SELECT ... FOR UPDATE` serialises balance changes for the
-  same account, so concurrent debits cannot overdraw (only one succeeds).
-- **Duplicate prevention**: `UNIQUE (account_id, reference_id)` plus an
-  application-level check before any mutation. The same reference may be reused
-  by different accounts.
-- **Rollback**: credit/debit insert + balance update happen in a single
-  `BEGIN`/`COMMIT`. Any failure issues `ROLLBACK` before responding — a failed
-  debit leaves no transaction record behind.
-- **Immutability**: no update/delete endpoints exist for transactions, and a
-  PostgreSQL trigger rejects `UPDATE`/`DELETE` on transaction rows at the
-  database layer.
-- **Monetary precision**: PostgreSQL `NUMERIC(12,2)` is used for all money;
-  JavaScript floating-point is never used for arithmetic. Values are returned
-  as decimal strings (e.g. `"70.00"`).
-- **Consistent errors**: a single JSON error shape (`{ error: { code, message } }`)
-  with HTTP statuses 400/404/409/422/500. Nothing internal is leaked.
+- **Row locking**: `SELECT ... FOR UPDATE` serializes balance changes per account, preventing overdrafts under concurrency.
+- **Duplicate prevention**: `UNIQUE(account_id, reference_id)` at the database level, plus an application check before mutation. Same reference may be reused by different accounts.
+- **Atomicity**: Transaction insert + balance update happen in one `BEGIN`/`COMMIT`. Failures issue `ROLLBACK` before responding — no orphan transaction records.
+- **Immutability**: No update/delete endpoints for transactions. A PostgreSQL trigger rejects `UPDATE`/`DELETE` on transaction rows.
+- **Monetary precision**: PostgreSQL `NUMERIC(12,2)` for all money; values returned as decimal strings (e.g. `"70.00"`).
+- **Serverless-friendly DB**: Uses Supabase connection pooler (`?pgbouncer=true`) so Vercel functions reuse connections.
 
 ## Known limitations
 
-- Single-node local PostgreSQL; no replication or connection pooling tuning.
-- The local instance is started manually (scripts above); not auto-managed by
-  the app.
-- Tested on Windows with Node.js v24.11.0 / npm 11.6.1 / PostgreSQL 16.
+- Supabase Free plan projects may pause after inactivity; the first request after a pause may be slow.
+- No authentication layer (out of scope for this assignment).
+- Single database environment; tests run against the configured `DATABASE_URL`.
