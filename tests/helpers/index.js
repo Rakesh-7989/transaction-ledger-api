@@ -17,6 +17,8 @@ export async function applySchema() {
   } finally {
     await pool.query('SELECT pg_advisory_unlock(12345)');
   }
+  // Truncate all tables so each test file starts with a clean database.
+  await truncateTables();
 }
 
 /**

@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import request from 'supertest';
-import { app, applySchema } from './helpers/index.js';
+import { app, applySchema, truncateTables } from './helpers/index.js';
 
 await applySchema();
 
@@ -14,6 +14,7 @@ async function seedAccount(name = 'Integrity User') {
 }
 
 test('stored balance equals credits minus debits after a mixed sequence', async () => {
+  await truncateTables();
   const accountId = await seedAccount('BalanceCheck');
 
   await request(app)
@@ -49,6 +50,7 @@ test('stored balance equals credits minus debits after a mixed sequence', async 
 });
 
 test('transaction updates are unavailable (no update endpoint)', async () => {
+  await truncateTables();
   const accountId = await seedAccount('NoUpdate');
   const { body: tx } = await request(app)
     .post(`/accounts/${accountId}/transactions`)
@@ -63,6 +65,7 @@ test('transaction updates are unavailable (no update endpoint)', async () => {
 });
 
 test('transaction deletes are unavailable (no delete endpoint)', async () => {
+  await truncateTables();
   const accountId = await seedAccount('NoDelete');
   const { body: tx } = await request(app)
     .post(`/accounts/${accountId}/transactions`)
@@ -76,6 +79,7 @@ test('transaction deletes are unavailable (no delete endpoint)', async () => {
 });
 
 test('concurrent debits cannot cause a negative balance', async () => {
+  await truncateTables();
   const accountId = await seedAccount('Concurrent');
 
   // Seed with 100.00.

@@ -1,11 +1,12 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import request from 'supertest';
-import { app, applySchema } from './helpers/index.js';
+import { app, applySchema, truncateTables } from './helpers/index.js';
 
 await applySchema();
 
 test('POST /accounts creates an account with a generated ID, zero balance and system timestamp', async () => {
+  await truncateTables();
   const res = await request(app)
     .post('/accounts')
     .send({ name: 'Ravi Kumar' })
@@ -23,11 +24,13 @@ test('POST /accounts creates an account with a generated ID, zero balance and sy
 });
 
 test('POST /accounts rejects missing name with 400', async () => {
+  await truncateTables();
   const res = await request(app).post('/accounts').send({}).expect(400);
   assert.match(res.body.error.code, /VALIDATION_ERROR/);
 });
 
 test('POST /accounts rejects empty name with 400', async () => {
+  await truncateTables();
   const res = await request(app)
     .post('/accounts')
     .send({ name: '   ' })
@@ -36,6 +39,7 @@ test('POST /accounts rejects empty name with 400', async () => {
 });
 
 test('POST /accounts rejects a client-supplied initial balance with 400', async () => {
+  await truncateTables();
   const res = await request(app)
     .post('/accounts')
     .send({ name: 'Ravi Kumar', balance: '500.00' })
@@ -44,6 +48,7 @@ test('POST /accounts rejects a client-supplied initial balance with 400', async 
 });
 
 test('GET /accounts/:accountId/balance returns 404 for an unknown account', async () => {
+  await truncateTables();
   const res = await request(app)
     .get('/accounts/00000000-0000-0000-0000-000000000000/balance')
     .expect(404);
@@ -51,6 +56,7 @@ test('GET /accounts/:accountId/balance returns 404 for an unknown account', asyn
 });
 
 test('GET /accounts/:accountId/transactions returns 404 for an unknown account', async () => {
+  await truncateTables();
   const res = await request(app)
     .get('/accounts/00000000-0000-0000-0000-000000000000/transactions')
     .expect(404);

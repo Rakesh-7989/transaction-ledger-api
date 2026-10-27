@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import request from 'supertest';
-import { app, applySchema } from './helpers/index.js';
+import { app, applySchema, truncateTables } from './helpers/index.js';
 
 await applySchema();
 
@@ -14,6 +14,7 @@ async function seedAccount(name = 'Tx Account') {
 }
 
 test('credit increases the balance exactly once', async () => {
+  await truncateTables();
   const accountId = await seedAccount('Credit User');
 
   const res = await request(app)
@@ -38,6 +39,7 @@ test('credit increases the balance exactly once', async () => {
 });
 
 test('debit decreases the balance exactly once', async () => {
+  await truncateTables();
   const accountId = await seedAccount('Debit User');
   await request(app)
     .post(`/accounts/${accountId}/transactions`)
@@ -69,6 +71,7 @@ test('debit decreases the balance exactly once', async () => {
 });
 
 test('debit above available balance is rejected without mutation (422)', async () => {
+  await truncateTables();
   const accountId = await seedAccount('Insufficient User');
   await request(app)
     .post(`/accounts/${accountId}/transactions`)
@@ -105,6 +108,7 @@ test('debit above available balance is rejected without mutation (422)', async (
 });
 
 test('zero amount is rejected (400)', async () => {
+  await truncateTables();
   const accountId = await seedAccount('Zero User');
   const res = await request(app)
     .post(`/accounts/${accountId}/transactions`)
@@ -119,6 +123,7 @@ test('zero amount is rejected (400)', async () => {
 });
 
 test('negative amount is rejected (400)', async () => {
+  await truncateTables();
   const accountId = await seedAccount('Neg User');
   const res = await request(app)
     .post(`/accounts/${accountId}/transactions`)
@@ -133,6 +138,7 @@ test('negative amount is rejected (400)', async () => {
 });
 
 test('malformed amount is rejected (400)', async () => {
+  await truncateTables();
   const accountId = await seedAccount('Malformed User');
   const res = await request(app)
     .post(`/accounts/${accountId}/transactions`)
@@ -147,6 +153,7 @@ test('malformed amount is rejected (400)', async () => {
 });
 
 test('unsupported type is rejected (400)', async () => {
+  await truncateTables();
   const accountId = await seedAccount('BadType User');
   const res = await request(app)
     .post(`/accounts/${accountId}/transactions`)
@@ -161,6 +168,7 @@ test('unsupported type is rejected (400)', async () => {
 });
 
 test('duplicate reference for the same account returns conflict and does not change balance', async () => {
+  await truncateTables();
   const accountId = await seedAccount('Dup User');
   await request(app)
     .post(`/accounts/${accountId}/transactions`)
@@ -190,6 +198,7 @@ test('duplicate reference for the same account returns conflict and does not cha
 });
 
 test('the same reference_id is accepted for different accounts', async () => {
+  await truncateTables();
   const a = await seedAccount('Account A');
   const b = await seedAccount('Account B');
 
@@ -217,6 +226,7 @@ test('the same reference_id is accepted for different accounts', async () => {
 });
 
 test('missing required fields are rejected (400)', async () => {
+  await truncateTables();
   const accountId = await seedAccount('MissingFields User');
   const res = await request(app)
     .post(`/accounts/${accountId}/transactions`)

@@ -20,7 +20,7 @@ export async function createAccount(data) {
   return {
     id: account.id,
     name: account.name,
-    balance: Number(account.balance).toFixed(2),
+    balance: account.balance,
     created_at: account.created_at,
   };
 }
@@ -36,5 +36,5 @@ export async function getBalance(accountId) {
   if (rows.length === 0) {
     throw new AppError('Account not found', 404, 'ACCOUNT_NOT_FOUND');
   }
-  return Number(rows[0].balance).toFixed(2);
+  return rows[0].balance;
 }

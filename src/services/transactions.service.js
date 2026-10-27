@@ -45,8 +45,6 @@ export async function createTransaction({
       await client.query('ROLLBACK');
       throw new AppError('Account not found', 404, 'ACCOUNT_NOT_FOUND');
     }
-    const currentBalance = Number(accounts[0].balance);
-
     // 3. Duplicate reference protection (before any mutation).
     const { rows: existing } = await client.query(
       `SELECT 1 FROM transactions
@@ -62,16 +60,31 @@ export async function createTransaction({
       );
     }
 
-    // 4. Sufficient funds for a debit.
+    // 4. For debit, ensure sufficient balance using PostgreSQL NUMERIC comparison.
+    //    For credit/debit, update balance in PostgreSQL NUMERIC arithmetic.
     let newBalance;
     if (parsed.type === 'debit') {
-      if (currentBalance < parsed.amount) {
+      const { rows: updated } = await client.query(
+        `UPDATE accounts
+         SET balance = balance - $1::NUMERIC
+         WHERE id = $2 AND balance >= $1::NUMERIC
+         RETURNING balance`,
+        [parsed.amount, accountId]
+      );
+      if (updated.length === 0) {
         await client.query('ROLLBACK');
         throw new AppError('Insufficient balance', 422, 'INSUFFICIENT_BALANCE');
       }
-      newBalance = currentBalance - parsed.amount;
+      newBalance = updated[0].balance;
     } else {
-      newBalance = currentBalance + parsed.amount;
+      const { rows: updated } = await client.query(
+        `UPDATE accounts
+         SET balance = balance + $1::NUMERIC
+         WHERE id = $2
+         RETURNING balance`,
+        [parsed.amount, accountId]
+      );
+      newBalance = updated[0].balance;
     }
 
     // 5. Insert the immutable transaction record.
@@ -82,11 +95,7 @@ export async function createTransaction({
       [accountId, parsed.type, parsed.amount, parsed.description, parsed.reference_id]
     );
 
-    // 6. Update the account balance (same transaction).
-    await client.query(
-      `UPDATE accounts SET balance = $1 WHERE id = $2`,
-      [newBalance.toFixed(2), accountId]
-    );
+    // 6. Account balance already updated above in PostgreSQL NUMERIC arithmetic.
 
     await client.query('COMMIT');
 
@@ -96,12 +105,12 @@ export async function createTransaction({
         id: tx.id,
         account_id: tx.account_id,
         type: tx.type,
-        amount: Number(tx.amount).toFixed(2),
+        amount: tx.amount,
         description: tx.description,
         reference_id: tx.reference_id,
         created_at: tx.created_at,
       },
-      balance: newBalance.toFixed(2),
+      balance: newBalance,
     };
   } catch (err) {
     // Roll back before surfacing the failure.
@@ -176,7 +185,7 @@ export async function getHistory(accountId, query) {
       id: tx.id,
       account_id: tx.account_id,
       type: tx.type,
-      amount: Number(tx.amount).toFixed(2),
+      amount: tx.amount,
       description: tx.description,
       reference_id: tx.reference_id,
       created_at: tx.created_at,

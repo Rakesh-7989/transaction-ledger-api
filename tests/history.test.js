@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import request from 'supertest';
-import { app, applySchema } from './helpers/index.js';
+import { app, applySchema, truncateTables } from './helpers/index.js';
 
 await applySchema();
 
@@ -54,6 +54,7 @@ async function seedWithMix(accountName = 'History User') {
 }
 
 test('type=credit filter returns only credit records', async () => {
+  await truncateTables();
   const accountId = await seedWithMix('CreditFilter');
   const res = await request(app)
     .get(`/accounts/${accountId}/transactions?type=credit`)
@@ -63,6 +64,7 @@ test('type=credit filter returns only credit records', async () => {
 });
 
 test('type=debit filter returns only debit records', async () => {
+  await truncateTables();
   const accountId = await seedWithMix('DebitFilter');
   const res = await request(app)
     .get(`/accounts/${accountId}/transactions?type=debit`)
@@ -72,6 +74,7 @@ test('type=debit filter returns only debit records', async () => {
 });
 
 test('omitting type returns both credit and debit records', async () => {
+  await truncateTables();
   const accountId = await seedWithMix('NoFilter');
   const res = await request(app)
     .get(`/accounts/${accountId}/transactions`)
@@ -83,6 +86,7 @@ test('omitting type returns both credit and debit records', async () => {
 });
 
 test('pagination metadata and boundaries are correct', async () => {
+  await truncateTables();
   const accountId = await seedWithMix('Pager');
   const res = await request(app)
     .get(`/accounts/${accountId}/transactions?page=1&limit=2`)
@@ -95,6 +99,7 @@ test('pagination metadata and boundaries are correct', async () => {
 });
 
 test('page 2 returns the remaining records', async () => {
+  await truncateTables();
   const accountId = await seedWithMix('Pager2');
   const res = await request(app)
     .get(`/accounts/${accountId}/transactions?page=2&limit=2`)
@@ -105,6 +110,7 @@ test('page 2 returns the remaining records', async () => {
 });
 
 test('beyond-last page returns empty data with correct metadata', async () => {
+  await truncateTables();
   const accountId = await seedWithMix('Pager3');
   const res = await request(app)
     .get(`/accounts/${accountId}/transactions?page=3&limit=2`)
@@ -114,6 +120,7 @@ test('beyond-last page returns empty data with correct metadata', async () => {
 });
 
 test('limit is clamped to a maximum of 100', async () => {
+  await truncateTables();
   const accountId = await seedWithMix('LimitMax');
   const res = await request(app)
     .get(`/accounts/${accountId}/transactions?limit=101`)
@@ -122,6 +129,7 @@ test('limit is clamped to a maximum of 100', async () => {
 });
 
 test('page must be >= 1', async () => {
+  await truncateTables();
   const accountId = await seedWithMix('LimitMin');
   const res = await request(app)
     .get(`/accounts/${accountId}/transactions?page=0`)
@@ -130,6 +138,7 @@ test('page must be >= 1', async () => {
 });
 
 test('results are latest-first with deterministic tie-breaking', async () => {
+  await truncateTables();
   const accountId = await seedWithMix('Order');
   const res = await request(app)
     .get(`/accounts/${accountId}/transactions`)
