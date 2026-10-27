@@ -93,3 +93,16 @@ See `docs/api-examples.md` for sample requests and responses.
 - Supabase Free plan projects may pause after inactivity; the first request after a pause may be slow.
 - No authentication layer (out of scope for this assignment).
 - Single database environment; tests run against the configured `DATABASE_URL`.
+
+## Assumptions
+
+1. **Single database environment**: All tests run against the configured `DATABASE_URL`. A dedicated test database is recommended for CI/CD.
+2. **No authentication**: Authentication and authorization are out of scope for this assignment. The API is open without auth tokens.
+3. **Monetary precision**: All monetary values use PostgreSQL `NUMERIC(12,2)`. JavaScript floating-point arithmetic is never used for balance calculations. All arithmetic happens in the database.
+4. **Immutability**: Transaction records cannot be updated or deleted. No PUT/DELETE endpoints exist for transactions, and a PostgreSQL trigger enforces this at the database layer.
+5. **Duplicate reference prevention**: `reference_id` must be unique per account. The same `reference_id` can be reused across different accounts.
+6. **Concurrent request safety**: `SELECT ... FOR UPDATE` row locking serializes balance changes per account, preventing overdrafts under concurrency.
+7. **Failed transactions leave no trace**: Failed debits (insufficient funds) and duplicate references are rejected with HTTP 422/409 and leave no transaction record or balance change.
+8. **Pagination defaults**: `page` defaults to 1, `limit` defaults to 10, `limit` maximum is 100.
+9. **Deterministic ordering**: Transaction history is ordered by `created_at DESC, id DESC` for stable results when timestamps are identical.
+10. **Error format**: All errors use a consistent JSON shape: `{ "error": { "code": "...", "message": "..." } }`.
