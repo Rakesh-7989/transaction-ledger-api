@@ -6,7 +6,7 @@ frontend — just the four REST endpoints required by the assignment.
 
 ## Live API
 
-Deployed on Vercel: **[LIVE_URL_PLACEHOLDER]**
+Deployed on Vercel: **[https://transaction-ledger-api.vercel.app](https://transaction-ledger-api.vercel.app)**
 
 Database: Supabase PostgreSQL (managed).
 
