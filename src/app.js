@@ -8,6 +8,11 @@ const app = express();
 
 app.use(express.json());
 
+// Health check endpoint.
+app.get('/health', (_req, res) => {
+  res.status(200).json({ status: 'ok', service: 'transaction-ledger-api' });
+});
+
 // API routes (both mounted under /accounts).
 app.use('/accounts', accountsRoutes);
 app.use('/accounts', transactionsRoutes);
